@@ -39,7 +39,8 @@ class AgentEvent(TypedDict, total=False):
 class RaidState(TypedDict, total=False):
     job_id: str
     mode: Literal["home", "venue"]
-    image_b64: str
+    image_b64: str  # first image (backward compat)
+    images_b64: list[str]
     budget_gbp: float
     brief: str
     headcount: int

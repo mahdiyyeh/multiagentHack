@@ -66,16 +66,39 @@ def _generate_with_fallback(parts: list[Any], *, retries: int = 2) -> str:
     raise last_error or RuntimeError("Gemini returned empty response")
 
 
-def audit_image(image_b64: str, mode: str) -> dict:
+def _mime_for_bytes(image_bytes: bytes) -> str:
+    if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if image_bytes[:2] == b"\xff\xd8":
+        return "image/jpeg"
+    if image_bytes[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if len(image_bytes) >= 12 and image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+        return "image/webp"
+    return "image/jpeg"
+
+
+def audit_images(images_b64: list[str], mode: str) -> dict:
+    if not images_b64:
+        raise ValueError("at least one image is required")
     prompt_name = "audit_venue.md" if mode == "venue" else "audit_home.md"
     prompt = _load_prompt(prompt_name)
-    image_bytes = base64.b64decode(image_b64)
-    parts = [
-        types.Part.from_text(text=prompt),
-        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-    ]
+    if len(images_b64) > 1:
+        prompt = (
+            f"{prompt}\n\n"
+            f"You are given {len(images_b64)} photos of the same space from different angles. "
+            "Synthesize a single holistic audit across all views."
+        )
+    parts: list[Any] = [types.Part.from_text(text=prompt)]
+    for image_b64 in images_b64:
+        image_bytes = base64.b64decode(image_b64)
+        parts.append(types.Part.from_bytes(data=image_bytes, mime_type=_mime_for_bytes(image_bytes)))
     text = _generate_with_fallback(parts)
     return _extract_json(text)
+
+
+def audit_image(image_b64: str, mode: str) -> dict:
+    return audit_images([image_b64], mode)
 
 
 def plan_queries(flaws: list[dict], mode: str, budget: float, brief: str, broaden: bool) -> list[str]:

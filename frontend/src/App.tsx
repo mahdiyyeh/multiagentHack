@@ -13,12 +13,12 @@ function App() {
   const [mode, setMode] = useState<"home" | "venue">("home");
   const [budget, setBudget] = useState(200);
   const [brief, setBrief] = useState("40 people, London, natural light, under £3000");
-  const { status, events, report, dashboard, error, previewUrl, startRaid } = useRaidStream();
+  const { status, events, report, dashboard, error, previewUrls, startRaid } = useRaidStream();
   const running = status === "running";
 
-  const handleSubmit = async (file: File) => {
+  const handleSubmit = async (files: File[]) => {
     try {
-      await startRaid(file, mode, budget, brief);
+      await startRaid(files, mode, budget, brief);
     } catch (e) {
       console.error(e);
     }
@@ -37,7 +37,13 @@ function App() {
           onBrief={setBrief}
           onSubmit={handleSubmit}
         />
-        {previewUrl && <img src={previewUrl} alt="Upload preview" className="preview" />}
+        {previewUrls.length > 0 && (
+          <div className={`preview-grid ${previewUrls.length === 1 ? "single" : ""}`}>
+            {previewUrls.map((url, i) => (
+              <img key={url} src={url} alt={`Upload preview ${i + 1}`} className="preview" />
+            ))}
+          </div>
+        )}
       </header>
 
       <main className="grid">

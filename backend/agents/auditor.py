@@ -6,11 +6,14 @@ from backend.tools import clickhouse_logger, gemini_client
 
 
 def run(state: RaidState) -> dict:
-    events = emit_event(state, "agent_start", "Auditor", "Analyzing space with Gemini vision...")
-    clickhouse_logger.log_event(state["job_id"], "Auditor", "start", {})
+    images_b64 = state.get("images_b64") or ([state["image_b64"]] if state.get("image_b64") else [])
+    count = len(images_b64)
+    msg = f"Analyzing {count} photo{'s' if count != 1 else ''} with Gemini vision..."
+    events = emit_event(state, "agent_start", "Auditor", msg)
+    clickhouse_logger.log_event(state["job_id"], "Auditor", "start", {"image_count": count})
 
     try:
-        result = gemini_client.audit_image(state["image_b64"], state.get("mode", "home"))
+        result = gemini_client.audit_images(images_b64, state.get("mode", "home"))
     except Exception as exc:
         events = append_log(state, "Auditor", f"Audit failed: {exc}")
         return {"agent_events": events, "error": str(exc)}

@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+
 type Props = {
   mode: "home" | "venue";
   budget: number;
@@ -6,10 +8,25 @@ type Props = {
   onMode: (m: "home" | "venue") => void;
   onBudget: (b: number) => void;
   onBrief: (b: string) => void;
-  onSubmit: (file: File) => void;
+  onSubmit: (files: File[]) => void;
 };
 
+const MAX_IMAGES = 10;
+
 export function UploadForm({ mode, budget, brief, running, onMode, onBudget, onBrief, onSubmit }: Props) {
+  const [selected, setSelected] = useState<File[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = (fileList: FileList | null) => {
+    if (!fileList?.length) return;
+    const images = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+    setSelected(images.slice(0, MAX_IMAGES));
+  };
+
+  const handleSubmit = () => {
+    if (selected.length > 0) onSubmit(selected);
+  };
+
   return (
     <section className="panel upload">
       <h1>SpaceRaid</h1>
@@ -30,9 +47,27 @@ export function UploadForm({ mode, budget, brief, running, onMode, onBudget, onB
         </label>
       )}
       <label className="file-label">
-        Upload photo
-        <input type="file" accept="image/*" disabled={running} onChange={(e) => e.target.files?.[0] && onSubmit(e.target.files[0])} />
+        Upload photos
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={running}
+          onChange={(e) => handleFiles(e.target.files)}
+        />
       </label>
+      {selected.length > 0 && (
+        <p className="file-count">{selected.length} photo{selected.length !== 1 ? "s" : ""} selected</p>
+      )}
+      <button
+        type="button"
+        className="raid-btn"
+        disabled={running || selected.length === 0}
+        onClick={handleSubmit}
+      >
+        {running ? "Raiding…" : "Start Raid"}
+      </button>
     </section>
   );
 }

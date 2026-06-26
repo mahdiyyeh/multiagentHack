@@ -34,17 +34,17 @@ export function useRaidStream() {
   const [report, setReport] = React.useState<RaidReport | null>(null);
   const [dashboard, setDashboard] = React.useState({ total_searches: 0, total_extracts: 0, total_grounded: 0, total_events: 0 });
   const [error, setError] = React.useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
 
-  const startRaid = async (file: File, mode: string, budget: number, brief: string) => {
+  const startRaid = async (files: File[], mode: string, budget: number, brief: string) => {
     setStatus("running");
     setEvents([]);
     setReport(null);
     setError(null);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrls(files.map((f) => URL.createObjectURL(f)));
 
     const form = new FormData();
-    form.append("image", file);
+    files.forEach((file) => form.append("images", file));
     form.append("mode", mode);
     form.append("budget", String(budget));
     form.append("brief", brief);
@@ -93,5 +93,5 @@ export function useRaidStream() {
     };
   };
 
-  return { status, events, report, dashboard, error, previewUrl, startRaid };
+  return { status, events, report, dashboard, error, previewUrls, startRaid };
 }

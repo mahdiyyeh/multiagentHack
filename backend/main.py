@@ -32,21 +32,37 @@ def health():
     return {"status": "ok", "service": "spaceraid"}
 
 
+MAX_IMAGES = 10
+
+
 @app.post("/api/raid")
 async def start_raid(
-    image: UploadFile = File(...),
+    images: list[UploadFile] = File(...),
     mode: str = Form("home"),
     budget: float = Form(200.0),
     brief: str = Form(""),
 ):
+    if not images:
+        return {"error": "at least one image is required"}
+    if len(images) > MAX_IMAGES:
+        return {"error": f"maximum {MAX_IMAGES} images allowed"}
+
     job_id = str(uuid.uuid4())
-    content = await image.read()
-    image_b64 = base64.b64encode(content).decode()
+    images_b64: list[str] = []
+    for upload in images:
+        content = await upload.read()
+        if not content:
+            continue
+        images_b64.append(base64.b64encode(content).decode())
+
+    if not images_b64:
+        return {"error": "no valid image data received"}
 
     initial: RaidState = {
         "job_id": job_id,
         "mode": "venue" if mode == "venue" else "home",
-        "image_b64": image_b64,
+        "image_b64": images_b64[0],
+        "images_b64": images_b64,
         "budget_gbp": budget,
         "brief": brief,
         "replan_count": 0,

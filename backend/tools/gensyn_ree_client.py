@@ -18,7 +18,8 @@ RECEIPTS_DIR = config.BASE_DIR / "receipts"
 
 def build_canonical(state: dict[str, Any]) -> dict[str, Any]:
     ranked = state.get("ranked", [])[:5]
-    image_hash = hashlib.sha256(state.get("image_b64", "").encode()).hexdigest()[:16]
+    images = state.get("images_b64") or ([state.get("image_b64", "")] if state.get("image_b64") else [])
+    image_hash = hashlib.sha256("".join(images).encode()).hexdigest()[:16]
     return {
         "audit_version": "1.0",
         "image_hash": image_hash,
