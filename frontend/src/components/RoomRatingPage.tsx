@@ -3,6 +3,7 @@ import { AgentTrace } from "./AgentTrace";
 import { AudioSummary } from "./AudioSummary";
 import { AuditPanel } from "./AuditPanel";
 import { BeforeAfterPanel } from "./BeforeAfterPanel";
+import { BuiltWithCursor } from "./BuiltWithCursor";
 import { CandidateCards } from "./CandidateCards";
 import { ReceiptPanel } from "./ReceiptPanel";
 import { RoomUpload } from "./RoomUpload";
@@ -138,6 +139,7 @@ export function RoomRatingPage({
             {report.total_gbp > 0 && (
               <p className="total-line">Curated total <strong>£{report.total_gbp.toFixed(0)}</strong></p>
             )}
+            <BuiltWithCursor compact />
           </div>
         </>
       )}
