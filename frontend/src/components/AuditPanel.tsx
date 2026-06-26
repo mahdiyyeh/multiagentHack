@@ -9,6 +9,14 @@ type Props = {
   whyBetter?: string;
 };
 
+function shortNote(text: string, max = 72): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${space > 40 ? cut.slice(0, space) : cut}…`;
+}
+
 export function AuditPanel({ scores, scoreEvidence = {}, flaws, variant, whyBetter }: Props) {
   const entries = Object.entries(scores);
   const average = avgScore(scores);
@@ -31,11 +39,17 @@ export function AuditPanel({ scores, scoreEvidence = {}, flaws, variant, whyBett
         </div>
       </div>
 
+      {isAfter && whyBetter && (
+        <p className="why-better why-better--lead">{whyBetter}</p>
+      )}
+
       <ul className="audit-bars">
         {entries.map(([k, v]) => {
           const evidence = scoreEvidence[k];
           const because = evidence?.because?.trim();
           const improvement = evidence?.improvement?.trim();
+          const pro = isAfter ? (improvement || because) : because;
+          const con = isAfter ? undefined : improvement;
           return (
             <li key={k} className="audit-bar-item">
               <div className="audit-bar-row">
@@ -45,13 +59,21 @@ export function AuditPanel({ scores, scoreEvidence = {}, flaws, variant, whyBett
                 </div>
                 <span className="audit-bar-value">{v}/10</span>
               </div>
-              {!isAfter && (because || improvement) && (
-                <div className="audit-notes">
-                  {because && (
-                    <p><span className="note-tag note-tag--pro">Pro</span> {because}</p>
+              {(pro || con) && (
+                <div className="audit-notes audit-notes--compact">
+                  {pro && (
+                    <p>
+                      <span className={`note-tag ${isAfter ? "note-tag--works" : "note-tag--pro"}`}>
+                        {isAfter ? "Works" : "Pro"}
+                      </span>
+                      {shortNote(pro)}
+                    </p>
                   )}
-                  {improvement && (
-                    <p><span className="note-tag note-tag--con">Improve</span> {improvement}</p>
+                  {con && (
+                    <p>
+                      <span className="note-tag note-tag--con">Improve</span>
+                      {shortNote(con)}
+                    </p>
                   )}
                 </div>
               )}
@@ -65,17 +87,14 @@ export function AuditPanel({ scores, scoreEvidence = {}, flaws, variant, whyBett
           <h4>What can be improved</h4>
           {flaws.map((f, i) => (
             <article key={i} className="flaw-card">
-              <span className={`severity severity--${f.severity || "medium"}`}>{f.severity || "note"}</span>
+              <span className={`severity severity--${f.severity || "medium"}`}>
+                {f.severity || "note"}
+              </span>
               <p className="flaw-title">{f.flaw || f.search_intent || `Zone ${i + 1}`}</p>
-              {f.con && <p className="flaw-con">{f.con}</p>}
-              {f.pro && <p className="flaw-pro"><span className="note-tag note-tag--pro">Potential</span> {f.pro}</p>}
+              {f.con && <p className="flaw-con">{shortNote(f.con, 100)}</p>}
             </article>
           ))}
         </div>
-      )}
-
-      {isAfter && whyBetter && (
-        <p className="why-better">{whyBetter}</p>
       )}
     </section>
   );

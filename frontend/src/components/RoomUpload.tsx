@@ -1,4 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const MAX_IMAGES = 10;
 
 type Props = {
   running: boolean;
@@ -7,22 +9,33 @@ type Props = {
 
 export function RoomUpload({ running, onSubmit }: Props) {
   const [selected, setSelected] = useState<File[]>([]);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [wantsSuggestions, setWantsSuggestions] = useState(true);
   const [isBlueprint, setIsBlueprint] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const urls = selected.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [selected]);
+
   const handleFiles = (fileList: FileList | null) => {
     if (!fileList?.length) return;
-    const file = Array.from(fileList).find((f) => f.type.startsWith("image/"));
-    if (!file) return;
-    setSelected([file]);
-    setPreview(URL.createObjectURL(file));
+    const images = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+    if (!images.length) return;
+    setSelected((prev) => [...prev, ...images].slice(0, MAX_IMAGES));
+  };
+
+  const removeImage = (index: number) => {
+    setSelected((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
     if (selected.length > 0) onSubmit(selected, wantsSuggestions, isBlueprint);
   };
+
+  const hasImages = previews.length > 0;
 
   return (
     <section className="room-upload">
@@ -30,13 +43,13 @@ export function RoomUpload({ running, onSubmit }: Props) {
         <p className="eyebrow">Common room</p>
         <h2 className="section-title">Before we begin</h2>
         <p className="lede lede--narrow">
-          Submit a photograph of your living space or layout drawing. We will audit proportion,
-          light, and material harmony — then curate verified improvements within your budget.
+          Submit one or more photographs of your living space or layout drawing. We will audit
+          proportion, light, and material harmony — then curate verified improvements within your budget.
         </p>
       </div>
 
       <div
-        className={`upload-zone ${preview ? "has-image" : ""}`}
+        className={`upload-zone ${hasImages ? "has-images" : ""}`}
         onClick={() => !running && inputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -50,20 +63,64 @@ export function RoomUpload({ running, onSubmit }: Props) {
           ref={inputRef}
           type="file"
           accept="image/*"
+          multiple
           hidden
           disabled={running}
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
         />
-        {preview ? (
-          <img src={preview} alt="Your room" className="upload-preview" />
-        ) : (
+        {!hasImages ? (
           <div className="upload-placeholder">
             <span className="upload-icon">+</span>
-            <p>Please submit a picture</p>
-            <span className="upload-hint">Drag & drop or click to browse</span>
+            <p>Add your room photos</p>
+            <span className="upload-hint">Drag & drop or click — select multiple at once</span>
+          </div>
+        ) : previews.length === 1 ? (
+          <img src={previews[0]} alt="Your room" className="upload-preview" />
+        ) : (
+          <div className="upload-grid">
+            {previews.map((url, i) => (
+              <div key={url} className="upload-grid__item">
+                <img src={url} alt={`Room photo ${i + 1}`} />
+                <button
+                  type="button"
+                  className="upload-grid__remove"
+                  aria-label={`Remove photo ${i + 1}`}
+                  disabled={running}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(i);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {selected.length < MAX_IMAGES && (
+              <button
+                type="button"
+                className="upload-grid__add"
+                disabled={running}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  inputRef.current?.click();
+                }}
+              >
+                + Add more
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {hasImages && (
+        <p className="upload-count">
+          {selected.length} photo{selected.length !== 1 ? "s" : ""} selected
+          {selected.length < MAX_IMAGES && ` · up to ${MAX_IMAGES}`}
+        </p>
+      )}
 
       <div className="upload-options">
         <label className="lux-toggle">

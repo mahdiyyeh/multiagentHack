@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { AgentTrace } from "./AgentTrace";
 import { AudioSummary } from "./AudioSummary";
 import { AuditPanel } from "./AuditPanel";
@@ -26,6 +27,7 @@ type Props = {
   wantsSuggestions: boolean;
   onSubmit: (files: File[], wantsSuggestions: boolean, isBlueprint: boolean) => void;
   onReset: () => void;
+  onVisionModeChange?: (active: boolean) => void;
 };
 
 export function RoomRatingPage({
@@ -39,11 +41,14 @@ export function RoomRatingPage({
   wantsSuggestions,
   onSubmit,
   onReset,
+  onVisionModeChange,
 }: Props) {
+  const [view, setView] = useState<"before" | "after">("before");
+  const [activeImage, setActiveImage] = useState(0);
   const hasResults = status === "complete" && report && previewUrls.length > 0;
   const flaws = (report?.flaws || []) as Flaw[];
   const ranked = (report?.ranked || []) as Candidate[];
-  const imageUrl = previewUrls[0];
+  const imageUrl = previewUrls[activeImage] ?? previewUrls[0];
 
   const beforeCallouts = flawCallouts(flaws, ranked);
   const afterCallouts = solutionCallouts(flaws, ranked);
@@ -54,6 +59,17 @@ export function RoomRatingPage({
   const whyBetter =
     report?.ranking_explanation ||
     "Warmer materials, corrected proportions, and verified furnishings raise every dimension — especially light, zoning, and biophilia.";
+
+  const showVision = wantsSuggestions && view === "after";
+
+  useEffect(() => {
+    setActiveImage(0);
+    setView("before");
+  }, [previewUrls.length, status]);
+
+  useEffect(() => {
+    onVisionModeChange?.(Boolean(hasResults && showVision));
+  }, [hasResults, showVision, onVisionModeChange]);
 
   return (
     <div className="room-rating-page">
@@ -74,29 +90,42 @@ export function RoomRatingPage({
             <p className="eyebrow">Audit complete</p>
             <button type="button" className="link-btn" onClick={onReset}>New audit</button>
           </div>
+
+          {previewUrls.length > 1 && (
+            <div className="image-strip" role="tablist" aria-label="Room photos">
+              {previewUrls.map((url, i) => (
+                <button
+                  key={url}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === activeImage}
+                  className={`image-strip__thumb ${i === activeImage ? "active" : ""}`}
+                  onClick={() => setActiveImage(i)}
+                >
+                  <img src={url} alt={`Room photo ${i + 1}`} />
+                  <span>{i + 1}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <BeforeAfterPanel
             imageUrl={imageUrl}
             beforeCallouts={beforeCallouts}
             afterCallouts={wantsSuggestions ? afterCallouts : beforeCallouts}
             isBlueprint={isBlueprint}
+            view={wantsSuggestions ? view : "before"}
+            onViewChange={wantsSuggestions ? setView : () => {}}
           />
 
-          <div className="audit-columns">
+          <div className="audit-zone">
             <AuditPanel
-              scores={report.scores}
+              scores={showVision ? afterScores : report.scores}
               scoreEvidence={report.score_evidence}
               flaws={flaws}
-              variant="before"
+              variant={showVision ? "after" : "before"}
+              whyBetter={showVision ? whyBetter : undefined}
             />
-            {wantsSuggestions && (
-              <AuditPanel
-                scores={afterScores}
-                scoreEvidence={report.score_evidence}
-                flaws={flaws}
-                variant="after"
-                whyBetter={whyBetter}
-              />
-            )}
           </div>
 
           {wantsSuggestions && ranked.length > 0 && (

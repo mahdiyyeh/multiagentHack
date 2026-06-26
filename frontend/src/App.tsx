@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HomeBlueprint } from "./components/HomeBlueprint";
 import { PlaceholderPage } from "./components/PlaceholderPage";
 import { RoomRatingPage } from "./components/RoomRatingPage";
@@ -14,6 +14,17 @@ function App() {
   const [wantsSuggestions, setWantsSuggestions] = useState(true);
   const { status, events, report, error, previewUrls, startRaid, reset } = useRaidStream();
   const running = status === "running";
+  const [visionMode, setVisionMode] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("vision-mode", visionMode);
+    return () => document.body.classList.remove("vision-mode");
+  }, [visionMode]);
+
+  const handleReset = () => {
+    setVisionMode(false);
+    reset();
+  };
 
   const handleSubmit = async (files: File[], wants: boolean, blueprint: boolean) => {
     setWantsSuggestions(wants);
@@ -51,7 +62,8 @@ function App() {
           isBlueprint={isBlueprint}
           wantsSuggestions={wantsSuggestions}
           onSubmit={handleSubmit}
-          onReset={reset}
+          onReset={handleReset}
+          onVisionModeChange={setVisionMode}
         />
       )}
 

@@ -86,15 +86,12 @@ export function solutionCallouts(flaws: Flaw[], ranked: Candidate[]): Callout[] 
     const match = ranked.find((c) => c.flaw_id === f.zone_id) ?? ranked[i];
     const what = match?.title || f.search_intent || "Curated piece";
     const why = match?.why || f.pro || "Elevates proportion, light, and material harmony.";
-    const how = match?.url
-      ? `Source verified listing — place at marked zone to resolve: ${f.flaw || "layout gap"}.`
-      : `Position within the highlighted zone; pair with existing palette for cohesion.`;
     return {
       id: `sol-${i}`,
       x: Math.min(85, Math.max(15, x)),
       y: Math.min(85, Math.max(15, y)),
       label: what,
-      detail: `${why} ${how}`,
+      detail: why,
       price: match?.price_gbp ?? undefined,
       side: x < 50 ? "left" : "right",
     };
