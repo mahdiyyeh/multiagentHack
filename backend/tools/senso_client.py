@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+import re
 
 import httpx
 
@@ -20,7 +20,7 @@ def verify_candidate(
     headcount: int,
     candidate: dict,
 ) -> dict:
-    """Senso API with rule-based fallback."""
+    """Senso KB search with rule-based fallback."""
     if config.SENSO_API_KEY:
         try:
             return _senso_verify(mode, budget, headcount, candidate)
@@ -29,22 +29,59 @@ def verify_candidate(
     return _rule_verify(mode, budget, headcount, candidate)
 
 
+def _senso_base_url() -> str:
+    return (config.SENSO_API_URL or "https://apiv2.senso.ai/api/v1").rstrip("/")
+
+
+def _parse_verdict(text: str) -> dict | None:
+    text = (text or "").strip()
+    if text.startswith("{"):
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+    match = re.search(r'\{[^{}]*"grounded"\s*:\s*(?:true|false)[^{}]*\}', text, re.I | re.S)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group())
+    except json.JSONDecodeError:
+        return None
+
+
 def _senso_verify(mode: str, budget: float, headcount: int, candidate: dict) -> dict:
     prompt = (
-        f"Ground truth rules:\n{KNOWLEDGE_TEXT}\n\n"
+        "Apply the procurement ground truth rules from the knowledge base.\n"
         f"Mode: {mode}. Budget: £{budget}. Headcount: {headcount}.\n"
-        f"Extracted text: {candidate.get('raw_extract', '')[:3000]}\n"
-        f"Claims: price={candidate.get('price_gbp')}, capacity={candidate.get('capacity')}, url={candidate.get('url')}\n"
-        'Return JSON: {"grounded":bool,"issues":[],"confidence":0.0-1.0}'
+        f"URL: {candidate.get('url')}\n"
+        f"Extracted page text:\n{(candidate.get('raw_extract') or '')[:2500]}\n"
+        f"Parsed claims: price_gbp={candidate.get('price_gbp')}, capacity={candidate.get('capacity')}\n"
+        "Decide if this candidate is grounded. Return ONLY valid JSON with keys: "
+        'grounded (bool), issues (string array), confidence (0.0-1.0).'
     )
-    headers = {"Authorization": f"Bearer {config.SENSO_API_KEY}", "Content-Type": "application/json"}
-    payload = {"query": prompt, "knowledge_base_id": config.SENSO_KB_ID}
-    with httpx.Client(timeout=30) as client:
-        resp = client.post(f"{config.SENSO_API_URL}/query", headers=headers, json=payload)
+    headers = {
+        "X-API-Key": config.SENSO_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    with httpx.Client(timeout=45) as client:
+        resp = client.post(
+            f"{_senso_base_url()}/org/search",
+            headers=headers,
+            json={"query": prompt, "max_results": 5},
+        )
         resp.raise_for_status()
         data = resp.json()
-    text = data.get("answer") or data.get("response") or json.dumps(data)
-    return json.loads(text) if text.strip().startswith("{") else _rule_verify(mode, budget, headcount, candidate)
+
+    verdict = _parse_verdict(data.get("answer") or "")
+    if not verdict or "grounded" not in verdict:
+        return _rule_verify(mode, budget, headcount, candidate)
+
+    return {
+        "grounded": bool(verdict.get("grounded")),
+        "issues": list(verdict.get("issues") or []),
+        "confidence": float(verdict.get("confidence", 0.8)),
+    }
 
 
 def _rule_verify(mode: str, budget: float, headcount: int, candidate: dict) -> dict:

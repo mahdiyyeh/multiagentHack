@@ -14,6 +14,9 @@ export function CandidateCards({ ranked, explanation }: Props) {
           <article key={i} className="card">
             <span className="rank-badge">#{String(c.rank ?? i + 1)}</span>
             {Boolean(c.grounded) && <span className="senso-badge">Senso Grounded ✓</span>}
+            {Boolean(c.ranked_by_prometheux) && (
+              <span className="prometheux-badge">Prometheux Ranked ✓</span>
+            )}
             <h3>{String(c.title ?? "Listing")}</h3>
             {c.price_gbp != null && <p className="price">£{Number(c.price_gbp).toFixed(0)}</p>}
             {c.capacity != null && <p>Capacity: {String(c.capacity)}</p>}

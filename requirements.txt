@@ -9,4 +9,4 @@ python-dotenv>=1.0.0
 sse-starlette>=2.1.0
 python-multipart>=0.0.12
 clickhouse-connect>=0.8.0
-twilio>=9.0.0
+prometheux-chain>=0.2.14

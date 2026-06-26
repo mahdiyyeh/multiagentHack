@@ -1053,6 +1053,16 @@ body.vision-mode .panel.cards {
   margin-bottom: 0.35rem;
 }
 
+.prometheux-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a4a8a;
+  margin-bottom: 0.35rem;
+  margin-left: 0.35rem;
+}
+
 .card h3 {
   font-family: var(--serif);
   font-size: 1.15rem;

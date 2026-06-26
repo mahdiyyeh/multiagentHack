@@ -19,6 +19,7 @@ export type Candidate = {
   why?: string;
   provenance?: string[];
   grounded?: boolean;
+  ranked_by_prometheux?: boolean;
   flaw_id?: number;
 };
 

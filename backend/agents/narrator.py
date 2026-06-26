@@ -8,12 +8,22 @@ def run(state: RaidState) -> dict:
     scores = state.get("scores", {})
     light = scores.get("natural_light", "?")
     total = state.get("total_gbp", 0)
-    count = len(state.get("ranked", []))
+    ranked = state.get("ranked", [])
+    grounded = [c for c in ranked if c.get("grounded")]
+    count = len(grounded) if grounded else len(ranked)
     mode = state.get("mode", "home")
+    item_word = "upgrades" if mode == "home" else "venues"
+    qualifier = "Senso-verified" if grounded else "ranked"
+
     text = (
         f"SpaceRaid complete. Your space scores {light} out of 10 on natural light. "
-        f"I found {count} verified {'upgrades' if mode == 'home' else 'venues'} totalling £{total:.0f}."
+        f"I found {count} {qualifier} {item_word}"
     )
+    if total > 0:
+        text += f" totalling £{total:.0f}."
+    else:
+        text += "."
+
     audio = elevenlabs_client.synthesize(text)
     events = emit_event(state, "agent_done", "Narrator", "Audio summary ready")
     return {

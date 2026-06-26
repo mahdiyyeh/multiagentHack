@@ -1,0 +1,32 @@
+% SpaceRaid procurement ranking ontology — executable business logic for the Ranker agent.
+% Runtime facts (candidate/...) are injected per raid; budget_pence param tunes spend cap.
+
+@param("budget_pence", "20000").
+
+% --- scoring rules (deterministic, explainable) ---
+
+price_pts(Url, 3) :- candidate(Url, _, Price, _, _), Price > 0, Price <= ${budget_pence}.
+price_pts(Url, 1) :- candidate(Url, _, Price, _, _), Price = 0.
+price_pts(Url, 0) :- candidate(Url, _, Price, _, _), Price > ${budget_pence}.
+
+ground_pts(Url, 2) :- candidate(Url, _, _, 1, _).
+ground_pts(Url, 0) :- candidate(Url, _, _, 0, _).
+
+conf_pts(Url, C) :- candidate(Url, _, _, _, Conf), C = Conf / 50.
+
+total_score(Url, S) :-
+    candidate(Url, _, _, _, _),
+    price_pts(Url, P1),
+    ground_pts(Url, P2),
+    conf_pts(Url, P3),
+    S = P1 + P2 + P3.
+
+in_budget(Url) :- candidate(Url, _, Price, _, _), Price > 0, Price <= ${budget_pence}.
+in_budget(Url) :- candidate(Url, _, Price, _, _), Price = 0.
+
+scored(Url, S, grounded_under_budget) :- total_score(Url, S), ground_pts(Url, 2), in_budget(Url).
+scored(Url, S, grounded) :- total_score(Url, S), ground_pts(Url, 2), price_pts(Url, 0).
+scored(Url, S, under_budget) :- total_score(Url, S), ground_pts(Url, 0), in_budget(Url).
+scored(Url, S, over_budget) :- total_score(Url, S), ground_pts(Url, 0), price_pts(Url, 0).
+
+@output("scored").

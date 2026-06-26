@@ -40,7 +40,32 @@ All agent events stream to ClickHouse (or in-memory fallback) and the React UI.
 | **Cursor** | `.cursor/rules/`, `AGENTS.md`, `CURSOR.md` — IDE rules mirror runtime agents |
 | **ClickHouse** | `agent_events` logger + Raid Dashboard |
 | **Gensyn REE** | Clerk cryptographic receipt on final shortlist (see [Gensyn setup](#gensyn-ree)) |
-| **Prometheux** | Ranker explainable provenance (Gemini fallback) |
+| **Prometheux** | Ranker explainable ontology via `prometheux-chain` SDK (Gemini fallback) |
+
+## Prometheux (Ranker)
+
+1. Sign up at https://platform.prometheux.ai/login (unlimited credits at the hackathon)
+2. Copy your **API token** from account settings
+3. Note your **org** and **username** from the platform URL: `.../jarvispy/<org>/<username>`
+4. Add to `.env`:
+
+```bash
+PMTX_TOKEN=your_token
+PROMETHEUX_ORG=your_org
+PROMETHEUX_USERNAME=your_username
+```
+
+5. Bootstrap the ranking ontology:
+
+```bash
+source .venv/bin/activate
+python scripts/setup_prometheux.py
+./run_backend.sh   # restart backend
+```
+
+6. **Start compute** in Prometheux: **Manage → Compute** → start a machine (required before concepts can run).
+
+The Ranker agent runs Vadalog rules for budget fit, Senso grounding, and confidence — with provenance on each card.
 | **Twilio** | Venue enquiry SMS (mailto fallback) |
 | **ElevenLabs** | Voice summary (browser TTS fallback) |
 | **Tessl** | Event sponsor — acknowledged |
