@@ -10,8 +10,14 @@ export type AgentEvent = {
   ts?: string;
 };
 
+export type ScoreEvidence = {
+  because?: string;
+  improvement?: string;
+};
+
 export type RaidReport = {
   scores: Record<string, number>;
+  score_evidence?: Record<string, ScoreEvidence>;
   flaws: Array<Record<string, unknown>>;
   ranked: Array<Record<string, unknown>>;
   manifest: Record<string, unknown>;
@@ -93,5 +99,13 @@ export function useRaidStream() {
     };
   };
 
-  return { status, events, report, dashboard, error, previewUrls, startRaid };
+  const reset = () => {
+    setStatus("idle");
+    setEvents([]);
+    setReport(null);
+    setError(null);
+    setPreviewUrls([]);
+  };
+
+  return { status, events, report, dashboard, error, previewUrls, startRaid, reset };
 }

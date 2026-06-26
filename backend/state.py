@@ -3,6 +3,11 @@ from __future__ import annotations
 from typing import Any, Literal, TypedDict
 
 
+class ScoreEvidence(TypedDict, total=False):
+    because: str
+    improvement: str
+
+
 class Flaw(TypedDict, total=False):
     zone_id: int
     bbox_pct: list[float]
@@ -45,7 +50,7 @@ class RaidState(TypedDict, total=False):
     brief: str
     headcount: int
     scores: dict[str, int]
-    score_evidence: dict[str, str]
+    score_evidence: dict[str, ScoreEvidence]
     flaws: list[Flaw]
     search_queries: list[str]
     search_results: list[dict[str, Any]]

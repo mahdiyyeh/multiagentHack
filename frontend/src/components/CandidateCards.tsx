@@ -7,7 +7,7 @@ export function CandidateCards({ ranked, explanation }: Props) {
   if (!ranked.length) return null;
   return (
     <section className="panel cards">
-      <h2>Verified Picks</h2>
+      <h2>Curated selections</h2>
       {explanation && <p className="rank-explain">{explanation}</p>}
       <div className="card-grid">
         {ranked.map((c, i) => (

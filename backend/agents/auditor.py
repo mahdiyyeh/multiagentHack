@@ -1,8 +1,24 @@
 import re
 
 from backend.events import append_log, emit_event
-from backend.state import RaidState
+from backend.state import RaidState, ScoreEvidence
 from backend.tools import clickhouse_logger, gemini_client
+
+
+def _normalize_score_evidence(raw: dict, scores: dict[str, int]) -> dict[str, ScoreEvidence]:
+    normalized: dict[str, ScoreEvidence] = {}
+    for dim, score in scores.items():
+        entry = raw.get(dim, {})
+        if isinstance(entry, str):
+            entry = {"because": entry.strip(), "improvement": ""}
+        elif not isinstance(entry, dict):
+            entry = {}
+        because = str(entry.get("because", "")).strip()
+        improvement = str(entry.get("improvement", "")).strip()
+        if not because:
+            because = f"Visual audit supports {score}/10 on {dim.replace('_', ' ')} from the uploaded photo(s)."
+        normalized[dim] = {"because": because, "improvement": improvement}
+    return normalized
 
 
 def run(state: RaidState) -> dict:
@@ -18,16 +34,25 @@ def run(state: RaidState) -> dict:
         events = append_log(state, "Auditor", f"Audit failed: {exc}")
         return {"agent_events": events, "error": str(exc)}
 
+    scores = result.get("scores", {})
+    score_evidence = _normalize_score_evidence(result.get("score_evidence", {}), scores)
+
     flaws = sorted(result.get("flaws", []), key=lambda f: {"high": 0, "medium": 1, "low": 2}.get(f.get("severity", "low"), 2))
     flaws = flaws[:3]
 
-    summary = ", ".join(f"{k} {v}/10" for k, v in list(result.get("scores", {}).items())[:3])
-    events = emit_event(state, "agent_done", "Auditor", f"Audit complete: {summary}", {"scores": result.get("scores")})
-    clickhouse_logger.log_event(state["job_id"], "Auditor", "done", {"scores": result.get("scores")})
+    summary = ", ".join(f"{k} {v}/10" for k, v in list(scores.items())[:3])
+    events = emit_event(
+        state,
+        "agent_done",
+        "Auditor",
+        f"Audit complete: {summary}",
+        {"scores": scores, "score_evidence": score_evidence},
+    )
+    clickhouse_logger.log_event(state["job_id"], "Auditor", "done", {"scores": scores, "score_evidence": score_evidence})
 
     return {
-        "scores": result.get("scores", {}),
-        "score_evidence": result.get("score_evidence", {}),
+        "scores": scores,
+        "score_evidence": score_evidence,
         "flaws": flaws,
         "agent_events": events,
     }
