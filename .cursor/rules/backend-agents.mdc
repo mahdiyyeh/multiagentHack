@@ -1,0 +1,15 @@
+---
+description: Backend agent implementation conventions
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Backend Agent Rules
+
+- One agent per file under `backend/agents/`
+- Agents are pure functions: `def run(state: RaidState) -> dict`
+- Use tools from `backend/tools/` — never call sponsor APIs directly in agents
+- Append to `agent_events` on start and completion
+- Return only changed keys (LangGraph merge)
+- JSON from LLMs: parse with try/except; fail gracefully with logged error event
+- No blocking sleeps in graph nodes

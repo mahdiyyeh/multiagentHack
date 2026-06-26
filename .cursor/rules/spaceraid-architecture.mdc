@@ -1,0 +1,16 @@
+---
+description: SpaceRaid LangGraph architecture, state schema, and SSE conventions
+alwaysApply: true
+---
+
+# SpaceRaid Architecture
+
+- Multi-agent pipeline via LangGraph in `backend/graph.py`
+- State type: `RaidState` in `backend/state.py` — never add fields without updating state.py and reporter
+- Agent flow: auditor → planner → scout → extractor → groundkeeper → skeptic → (replan?) → ranker → clerk → actor → narrator → reporter
+- Each agent lives in `backend/agents/{name}.py` as `run(state) -> dict` returning partial state updates
+- Stream events via `emit_event(state, agent, message, data=None)` — shapes: `agent_start`, `agent_done`, `agent_log`
+- Tier 1 sponsors (no fallback): Tavily, Senso, Gemini, Cursor docs
+- Tier 2 sponsors must use graceful fallbacks in `backend/tools/`
+- Hard caps: max 3 flaws, 2 replans, 15 Tavily calls per raid
+- Modes: `home` | `venue`

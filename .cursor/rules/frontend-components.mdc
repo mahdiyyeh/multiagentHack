@@ -1,0 +1,14 @@
+---
+description: Frontend React component conventions
+globs: frontend/src/**
+alwaysApply: false
+---
+
+# Frontend Rules
+
+- Single-page app; all raid UI in `App.tsx` composition
+- Use `useRaidStream` hook for POST + SSE — do not duplicate fetch logic
+- API base: `import.meta.env.VITE_API_URL || 'http://localhost:8000'`
+- AgentTrace is the autonomy proof panel — always visible during raid
+- Disable raid button while `status === 'running'`
+- Sponsor badges: Senso Grounded, Gensyn Receipt, ClickHouse stats
