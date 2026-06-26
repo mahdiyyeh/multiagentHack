@@ -3,14 +3,22 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
 PROMPTS_DIR = BASE_DIR / "backend" / "prompts"
 KNOWLEDGE_DIR = BASE_DIR / "knowledge"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL_FALLBACKS = [
+    m.strip()
+    for m in os.getenv(
+        "GEMINI_MODEL_FALLBACKS",
+        "gemini-3.1-flash-lite-preview,gemini-3-flash-preview,gemini-2.5-pro",
+    ).split(",")
+    if m.strip()
+]
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 SENSO_API_KEY = os.getenv("SENSO_API_KEY", "")
@@ -23,6 +31,12 @@ CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
 CLICKHOUSE_DATABASE = os.getenv("CLICKHOUSE_DATABASE", "spaceraid")
 
 GENSYN_REE_API_KEY = os.getenv("GENSYN_REE_API_KEY", "")
+# Optional hosted REE endpoint (no public default — ask Gensyn at the hackathon if provided)
+GENSYN_REE_API_URL = os.getenv("GENSYN_REE_API_URL", "")
+# Local REE repo path (clone https://github.com/gensyn-ai/ree); requires Docker
+GENSYN_REE_LOCAL_REPO = os.getenv("GENSYN_REE_LOCAL_REPO", "")
+GENSYN_REE_USE_LOCAL = os.getenv("GENSYN_REE_USE_LOCAL", "").lower() in {"1", "true", "yes"}
+GENSYN_REE_MODEL = os.getenv("GENSYN_REE_MODEL", "Qwen/Qwen3-0.6B")
 PROMETHEUX_API_KEY = os.getenv("PROMETHEUX_API_KEY", "")
 PROMETHEUX_API_URL = os.getenv("PROMETHEUX_API_URL", "")
 PROMETHEUX_ONTOLOGY_ID = os.getenv("PROMETHEUX_ONTOLOGY_ID", "")

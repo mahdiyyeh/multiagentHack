@@ -39,11 +39,21 @@ All agent events stream to ClickHouse (or in-memory fallback) and the React UI.
 | **Google Gemini** | Vision audit + planner + ranker fallback |
 | **Cursor** | `.cursor/rules/`, `AGENTS.md`, `CURSOR.md` — IDE rules mirror runtime agents |
 | **ClickHouse** | `agent_events` logger + Raid Dashboard |
-| **Gensyn REE** | Clerk cryptographic receipt on final shortlist |
+| **Gensyn REE** | Clerk cryptographic receipt on final shortlist (see [Gensyn setup](#gensyn-ree)) |
 | **Prometheux** | Ranker explainable provenance (Gemini fallback) |
 | **Twilio** | Venue enquiry SMS (mailto fallback) |
 | **ElevenLabs** | Voice summary (browser TTS fallback) |
 | **Tessl** | Event sponsor — acknowledged |
+
+## Gensyn REE
+
+There is **no public cloud API key** for Gensyn REE. Receipts come from one of:
+
+1. **Hackathon sponsor desk** — ask Gensyn for `GENSYN_REE_API_URL` + `GENSYN_REE_API_KEY` if they provide a hosted endpoint
+2. **Local REE** (Docker required) — run `./scripts/setup_gensyn_ree.sh`, install [Docker Desktop](https://docs.docker.com/get-docker/), optionally set `GENSYN_REE_USE_LOCAL=1`
+3. **Deterministic fallback** (default) — SHA256 receipt saved to `receipts/<job_id>.json`, verifiable with `python scripts/verify_receipt.py receipts/<job_id>.json`
+
+Docs: https://docs.gensyn.ai/tech/ree/get-started
 
 ## Built with Cursor
 
